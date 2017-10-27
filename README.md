@@ -17,6 +17,7 @@ To remove
         });
         afterEach(() => {
             jasmine.Ajax.uninstall();
+            jasmine.AsyncTestMatcher.uninstall();
         });
         it("Some rest call throws error on 400 response", async (done) => {
             //Arrange
