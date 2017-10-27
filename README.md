@@ -1,6 +1,8 @@
 # async-jasmime
 
-```javascriptjasmine.AsyncTestMatcher.install(this);``` and pass in scope. 
+To add matchers
+```javascriptjasmine.AsyncTestMatcher.install(this);``` and pass in scope. <br/>
+To remove
 ```javascriptjasmine.AsyncTestMatcher.uninstall();```
 
 ## Example
