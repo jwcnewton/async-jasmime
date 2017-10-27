@@ -13,35 +13,28 @@
             jasmine.Ajax.install();
             jamSut = new jam();
         });
-
         afterEach(() => {
             jasmine.Ajax.uninstall();
         });
-        describe("Some test", () => {
-
-            afterEach(() => {
-                jasmine.AsyncTestMatcher.uninstall();
+        it("Some rest call throws error on 400 response", async (done) => {
+            //Arrange
+            jasmine.Ajax.stubRequest(anyRegex).andReturn({
+                "responseText": "",
+                "status": 404
             });
 
-            it("Some rest call throws error on 400 response", async (done) => {
-                //Arrange
-                jasmine.Ajax.stubRequest(anyRegex).andReturn({
-                    "responseText": "",
-                    "status": 404
-                });
+            jasmine.AsyncTestMatcher.install(this);
 
-                jasmine.AsyncTestMatcher.install(this);
+            await expect(jamSut.someAsyncFunction({})).toThrowAnExceptionAsync(TypeError);
+            done();
+        });
 
-                await expect(jamSut.someAsyncFunction({})).toThrowAnExceptionAsync(TypeError);
-                done();
-            });
-
-            it("True to be true jam", () => {
-                //Act
-                expect(true).toEqual(true);
-            });
+        it("True to be true", () => {
+            //Act
+            expect(true).toEqual(true);
         });
     });
+});
 ```
 
 ### Support
