@@ -1,6 +1,8 @@
 # async-jasmime
 
-```jasmine
+## Example
+
+```javascript
     describe("SomeTest", () => {
         var jamSut;
         const anyRegex = /.*/;
