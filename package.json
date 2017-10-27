@@ -1,0 +1,28 @@
+{
+  "name": "async-jasmine",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/async-scripts",
+  "directories": {
+    "test": "spec"
+  },
+  "dependencies": {
+    "jasmine": "^2.8.0"
+  },
+  "devDependencies": {
+    "jasmine": "^2.8.0"
+  },
+  "scripts": {
+    "test": "jasmine"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jwcnewton/async-jasmime.git"
+  },
+  "author": "Jonathan Newton",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jwcnewton/async-jasmime/issues"
+  },
+  "homepage": "https://github.com/jwcnewton/async-jasmime#readme"
+}
