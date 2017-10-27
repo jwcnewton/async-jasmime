@@ -1,5 +1,8 @@
 # async-jasmime
 
+```javascriptjasmine.AsyncTestMatcher.install(this);``` and pass in scope. 
+```javascriptjasmine.AsyncTestMatcher.uninstall();```
+
 ## Example
 
 ```javascript
@@ -27,7 +30,7 @@
                     "status": 404
                 });
 
-                jasmine.AsyncTestMatcher.install(jamSut);
+                jasmine.AsyncTestMatcher.install(this);
 
                 await expect(jamSut.someAsyncFunction({})).toThrowAnExceptionAsync(TypeError);
                 done();
