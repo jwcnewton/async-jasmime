@@ -19,67 +19,32 @@
         asyncExcept.AsyncCustomMatchers = jRequire.AsyncCustomMatchers(asyncExcept);
         return asyncExcept.AsyncCustomMatchers;
     };
-
+    getJasmineRequireObj().jasmineMatchers = global.jasmine.matchers;
     getJasmineRequireObj().AsyncCustomMatchers = function(exAsAsync) {
-        function AsyncCustomMatchers() {
+        function AsyncCustomMatchers(global) {
             var testTarget,
                 defaultExept,
                 defaultWrap,
                 customExceptions = exAsAsync.CustomMatchers(),
                 asyncWrap = exAsAsync.AsyncWrap,
                 excpAdapt = exAsAsync.ExpectationAdaptor;
-                
             this.install = function(t_) {
                 testTarget = t_;
-                jasmine.addMatchers(customExceptions);
-                defaultExept = jasmine.Expectation;
-                defaultWrap = jasmine.Expectation.prototype.wrapCompare;
+                global.jasmine.addMatchers(customExceptions);
+                defaultExept = global.jasmine.Expectation;
+                defaultWrap = global.jasmine.Expectation.prototype.wrapCompare;
 
-                jasmine.Expectation = excpAdapt();
-                jasmine.Expectation.prototype.wrapCompare = asyncWrap;
+                global.jasmine.Expectation = excpAdapt();
+                global.jasmine.Expectation.prototype.wrapCompare = asyncWrap;
             };
             this.uninstall = () => {
                 this.testTarget = null;
-                jasmine.Expectation = defaultExept;
-                jasmine.Expectation.prototype.wrapCompare = defaultWrap;
+                global.jasmine.Expectation = defaultExept;
+                global.jasmine.Expectation.prototype.wrapCompare = defaultWrap;
             };
         }
 
         return AsyncCustomMatchers;
-    };
-
-    getJasmineRequireObj().AsyncMatchers = function() {
-        return {
-            toThrowAnExceptionAsync: (util) => {
-                return {
-                    compare: async (actual, expected) => {
-                        var output = {},
-                            threwException = false,
-                            result = {};
-                            
-                        try {
-                            await actual;
-                            return result;
-                        } catch (err) {
-                            threwException = true;
-                            output = err;
-                        }
-
-                        result.pass = util.equals(output.constructor, expected);
-                        if (result.pass) {
-                            result.message = `Expected exception of type: ${expected.name}`;
-                        } else if (!result.pass && threwException) {
-                            result.message =
-                                `Expected exception of type: ${expected.name} but got exception of type ${output.name}`;
-                        } else {
-                            result.message = "Expected function did not throw exception";
-                        }
-                        return result;
-                    }
-
-                }
-            }
-        }
     };
 
     getJasmineRequireObj().AsyncExpectationAdaptor = function () {
@@ -90,8 +55,8 @@
             this.addExpectationResult = options.addExpectationResult || function () { };
             this.isNot = options.isNot;
 
-            var customMatchers = options.customMatchers || {};
-            for (var matcherName in customMatchers) {
+            var customMatchers = Object.assign(options.customMatchers, getJasmineRequireObj().jasmineMatchers) || {};
+            for (let matcherName in customMatchers) {
                 this[matcherName] = Expectation.prototype.wrapCompare(matcherName, customMatchers[matcherName], options);
             }
         }
@@ -108,7 +73,6 @@
             var expect = new Expectation(options);
             options.isNot = true;
             expect.not = new Expectation(options);
-
             return expect;
         };
 
@@ -122,30 +86,45 @@
                 message = '',
                 result = null;
 
-            args.unshift(options.actual);
+            args.unshift(this.actual);
 
-            var matcher = matcherFactory(options.util, options.customEqualityTesters),
+            var matcher = matcherFactory(this.util, this.customEqualityTesters),
                 matcherCompare = matcher.compare;
 
 
-            function defaultNegativeCompare() {
-                var result = matcher.compare.apply(null, args);
+            async function defaultNegativeCompare() {
+                var result;
+                try {
+                    if (name.indexOf('Async') !== -1) {
+                        result = await matcher.compare.apply(null, args);
+                    } else {
+                        result = matcher.compare.apply(null, args);
+                    }
+                } catch (err) {
+                    throw new Error(`Test assertion threw unexpected exception: ${err.message}`);
+                }
                 result.pass = !result.pass;
                 return result;
             }
 
-            if (options.isNot) {
+            if (this.isNot) {
                 matcherCompare = matcher.negativeCompare || defaultNegativeCompare;
             }
 
-            if (options.actual.constructor.name === "Promise")
-                result = await matcherCompare.apply(null, args);
-            else
-                result = matcherCompare.apply(null, args);
+            try {
+                if (name.indexOf('Async') !== -1) {
+                    result = await matcherCompare.apply(null, args);
+                } else {
+                    result = matcherCompare.apply(null, args);
+                }
+
+            } catch (err) {
+                throw new Error(`Test assertion threw unexpected exception: ${err.message}`);
+            }
 
             if (!result.pass) {
                 if (!result.message) {
-                    args.unshift(options.isNot);
+                    args.unshift(this.isNot);
                     args.unshift(name);
                     message = options.util.buildFailureMessage.apply(null, args);
                 } else {
@@ -173,9 +152,69 @@
         };
     };
 
+    getJasmineRequireObj().AsyncMatchers = function () {
+        return {
+            toThrowAnExceptionAsync: (util) => {
+                return {
+                    compare: async (actual, expected) => {
+                        var output = {},
+                            threwException = false,
+                            result = {};
+
+                        if (!expected || !expected.__proto__) {
+                            throw new Error("Expected method is null or undefined");
+                        }
+                        if (actual.constructor.name !== "Promise" && typeof actual.then != "function") {
+                            throw new Error("Passed in method is not a promise");
+                        }
+                        if (!expected.name) {
+                            throw new Error("Passed in object does not contain a name");
+                        }
+
+                        try {
+                            if (typeof actual.then === "function") {
+                                await actual.then(() => { }, (err) => { throw err;});
+                            } else {
+                                await actual;
+                            }
+                        } catch (err) {
+                            threwException = true;
+                            output = err;
+                        }
+
+                        result.pass = util.equals(output.constructor, expected);
+                        if (result.pass) {
+                            result.message = `Expected exception of type: ${expected.name}`;
+                        } else if (!result.pass && threwException) {
+                            result.message =
+                                `Expected exception of type: ${expected.name} but got exception of type ${output.name}`;
+                        } else {
+                            result.message = "Expected function did not throw exception";
+                        }
+                        return result;
+                    }
+
+                }
+            }, toEqualAsync: (util) => {
+                return {
+                    compare: async function (actual, expected) {
+                        var result = {
+                            pass: false
+                        };
+
+                        result.pass = util.equals(actual, expected);
+
+                        return result;
+                    }
+                }
+            }
+        }
+    };
+
+
     var jRequire = getJasmineRequireObj();
     var AsyncTestMatcher = jRequire.asyncTestMatcher(jRequire);
-    jasmine.AsyncTestMatcher = new AsyncTestMatcher(global);
+    window.jasmine.AsyncTestMatcher = new AsyncTestMatcher(global);
 
     return AsyncTestMatcher;
 }));
