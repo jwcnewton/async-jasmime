@@ -2,7 +2,7 @@ async-jasmine
 ======
 
 Jasmine-async, wraps jasmine wrapCompare with asynchronous
-functionality, currently supporting browser.
+functionality, **currently supporting browser**.
 
 Setting up jasmine-async 
 =========================
