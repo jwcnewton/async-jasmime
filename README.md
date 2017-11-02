@@ -34,12 +34,12 @@ new matchers following the jasmine standard for matchers:
 ```javascript
 toEqualAsync: (util) => {
     return {
-        compare: (1) async function (actual, expected) (2) {
+        compare: *(1)* async function (actual, expected) *(2)* {
             var result = {
                 pass: false
             };
 
-            result.pass = util.equals(actual, expected); (3)
+            result.pass = util.equals(actual, expected); *(3)*
 
             return result;
         }
